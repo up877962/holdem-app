@@ -60,16 +60,24 @@ socket.on("game_state", function(data) {
 
 // Handle private hands (only for the current player)
 socket.on("player_hand", function(data) {
+    console.log("🎴 Received player's private hand:", data.hand);
+
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
 
-    data.hand.forEach(card => {
-        let cardDiv = document.createElement("div");
-        cardDiv.className = "card";
-        cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
-        playerHandContainer.appendChild(cardDiv);
-    });
+    if (!data.hand || data.hand.length === 0) {
+        console.error("❌ Player hand data is missing!");
+    } else {
+        data.hand.forEach(card => {
+            let cardDiv = document.createElement("div");
+            cardDiv.className = "card";
+            cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
+            playerHandContainer.appendChild(cardDiv);
+        });
+    }
 });
+
+
 
 // Handle betting actions
 function placeBet(amount) {

@@ -37,7 +37,15 @@ def handle_join_game(data):
 
         player = game.get_player(player_name)
         if player:
+            # 🔥 Fix: Ensure the hand is properly set before sending it
+            if not player.hand:
+                player.hand = game.deck.deal(2)
+
+            print(f"🎴 Sending hand to {player.name}: {player.hand}")  # Debugging confirmation
             emit('player_hand', {"hand": player.hand}, room=request.sid)
+
+
+
 
 @socketio.on('player_action')
 def handle_action(data):

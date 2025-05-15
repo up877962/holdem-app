@@ -4,19 +4,22 @@ class Player:
         self.chips = 1000
         self.hand = []
         self.status = "active"
-        self.has_acted = False  # NEW: Track if player has acted
+        self.has_acted = False
+        self.bet_amount = 0  # NEW: Track the current bet amount
+
+    def reset_for_new_game(self):
+        """Reset player state for a new hand."""
+        self.status = "active"
+        self.hand = []
+        self.has_acted = False
+        self.bet_amount = 0  # Reset bet amount
 
     def fold(self):
         self.status = "folded"
-        self.has_acted = True  # Mark as acted
+        self.has_acted = True
 
     def bet(self, amount):
         self.chips -= amount
-        self.has_acted = True  # Mark as acted
+        self.bet_amount += amount  # Track total bet for matching calls
+        self.has_acted = True
         return amount
-
-
-    def reset_for_new_game(self):
-        """Reset player status for a new round"""
-        self.status = "active"
-        self.hand = []

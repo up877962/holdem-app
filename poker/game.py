@@ -23,6 +23,7 @@ class PokerGame:
         return None
 
     def start_game(self):
+        """Start game with preflop hole cards."""
         self.deck = Deck()
         self.community_cards = []
         self.pot = 0
@@ -31,6 +32,7 @@ class PokerGame:
         for player in self.players:
             player.reset_for_new_game()
             player.hand = self.deck.deal(2)
+            print(f"🃏 {player.name} received: {player.hand}")  # Debugging line
 
     def next_round(self):
         if self.current_round < len(self.rounds) - 1:
@@ -41,32 +43,35 @@ class PokerGame:
                 self.community_cards.append(self.deck.deal(1)[0])
 
     def process_action(self, name, action, amount=0):
-        """Players make betting decisions (Raise, Call, Fold) to advance rounds correctly."""
+        """Players make betting decisions (Raise, Call, Fold) correctly."""
         player = self.get_player(name)
         if not player:
             return
 
         if action == "fold":
             player.fold()
-            player.has_acted = True  # Mark as acted
         elif action == "raise":
-            bet_amount = player.bet(amount)
-            self.pot += bet_amount
-            player.has_acted = True  # Mark as acted
+            player.bet(amount)
+            self.pot += amount
         elif action == "call":
-            player.has_acted = True  # Mark as acted
+            highest_bet = max(p.bet_amount for p in self.players if p.status != "folded")
+            call_amount = highest_bet - player.bet_amount
+
+            if call_amount > 0:
+                player.bet(call_amount)
+                self.pot += call_amount
+
+        player.has_acted = True
 
         # Advance round only if all non-folded players have acted
         active_players = [p for p in self.players if p.status != "folded"]
         if all(p.has_acted for p in active_players):
             self.next_round()
 
-        # Reset for next betting phase
         for p in self.players:
             p.has_acted = False
 
     def get_state(self):
-        """Return the current game state."""
         return {
             "players": [{"name": p.name, "chips": p.chips, "status": p.status} for p in self.players],
             "pot": self.pot,
