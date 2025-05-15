@@ -45,7 +45,11 @@ def handle_action(data):
     if game_id in games:
         game = games[game_id]
         game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
+
+        # Broadcast updated game state to all players
         emit('game_state', game.get_state(), broadcast=True)
+
+
 
 @socketio.on('reveal')
 def handle_reveal(data):
@@ -54,7 +58,22 @@ def handle_reveal(data):
         game = games[game_id]
         winner = game.determine_winner()
         emit('game_result', {"winner": winner, "pot": game.pot}, broadcast=True)
-        game.start_game()
+        emit('game_state', game.get_state(), broadcast=True)
+
+@socketio.on('leave_game')
+def handle_leave(data):
+    game_id = data['game_id']
+    player_name = data['name']
+
+    if game_id in games:
+        game = games[game_id]
+        game.players = [p for p in game.players if p.name != player_name]
+
+        if not game.players:
+            del games[game_id]
+
+    emit('update_games', list(games.keys()), broadcast=True)
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

@@ -2,7 +2,6 @@ from poker.deck import Deck
 from poker.hand_evaluator import evaluate_hand
 from poker.player import Player
 
-
 class PokerGame:
     def __init__(self):
         self.players = []
@@ -24,7 +23,6 @@ class PokerGame:
         return None
 
     def start_game(self):
-        """Start game with preflop hole cards."""
         self.deck = Deck()
         self.community_cards = []
         self.pot = 0
@@ -35,34 +33,50 @@ class PokerGame:
             player.hand = self.deck.deal(2)
 
     def next_round(self):
-        """Advance through poker rounds based on player actions."""
         if self.current_round < len(self.rounds) - 1:
             self.current_round += 1
-
             if self.rounds[self.current_round] == "flop":
                 self.community_cards.extend(self.deck.deal(3))
             elif self.rounds[self.current_round] in ["turn", "river"]:
                 self.community_cards.append(self.deck.deal(1)[0])
 
     def process_action(self, name, action, amount=0):
-        """Players make decisions (Raise, Call, Fold)."""
+        """Players make betting decisions (Raise, Call, Fold) to advance rounds correctly."""
         player = self.get_player(name)
         if not player:
             return
 
         if action == "fold":
             player.fold()
+            player.has_acted = True  # Mark as acted
         elif action == "raise":
             bet_amount = player.bet(amount)
             self.pot += bet_amount
+            player.has_acted = True  # Mark as acted
         elif action == "call":
-            pass
+            player.has_acted = True  # Mark as acted
 
-        if all(p.status == "folded" or p.status == "active" for p in self.players):
+        # Advance round only if all non-folded players have acted
+        active_players = [p for p in self.players if p.status != "folded"]
+        if all(p.has_acted for p in active_players):
             self.next_round()
 
+        # Reset for next betting phase
+        for p in self.players:
+            p.has_acted = False
+
+    def get_state(self):
+        """Return the current game state."""
+        return {
+            "players": [{"name": p.name, "chips": p.chips, "status": p.status} for p in self.players],
+            "pot": self.pot,
+            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in self.community_cards],
+            "current_turn": self.current_turn,
+            "current_round": self.rounds[self.current_round],
+        }
+
     def determine_winner(self):
-        """Evaluate best hand at showdown."""
+        """Evaluate the best poker hand and declare a winner."""
         best_hand = None
         winner = None
 
@@ -75,11 +89,3 @@ class PokerGame:
 
         return winner
 
-    def get_state(self):
-        return {
-            "players": [{"name": p.name, "chips": p.chips, "status": p.status} for p in self.players],
-            "pot": self.pot,
-            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in self.community_cards],
-            "current_turn": self.current_turn,
-            "current_round": self.rounds[self.current_round],
-        }

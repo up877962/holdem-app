@@ -47,3 +47,13 @@ body {
     padding: 10px;
     border-radius: 5px;
 }
+
+.leave-btn {
+    background-color: #c0392b;
+    color: white;
+    font-weight: bold;
+}
+
+.leave-btn:hover {
+    background-color: #e74c3c;
+}
