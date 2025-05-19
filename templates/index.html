@@ -4,27 +4,43 @@
     <title>Texas Hold'em Poker</title>
     <link rel="stylesheet" type="text/css" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="/static/script.js"></script>
+    <script src="/static/script.js" defer></script>
 </head>
 <body>
     <h1>Texas Hold'em Poker</h1>
-        <div id="player-info">
-        <h3>Welcome, <span id="player-name"></span>!</h3>
-        </div>
 
+    <div id="player-info">
+        <h3>Welcome, <span id="player-name"></span>!</h3>
+    </div>
+
+    <!-- 🔄 Game Selection -->
     <div id="game-selection">
         <button onclick="createGame()">Create Game</button>
         <h3>Available Games:</h3>
         <ul id="game-list"></ul>
     </div>
 
-        <div id="game-container" style="display: none;">
-            <h2 id="game-title"></h2>
-            <div id="turn-indicator"><h3>🎭 Current Turn: Waiting...</h3></div>
-            <div id="community-cards"></div>
-            <div id="players"></div>
-            <div id="player-hand"></div>
+    <!-- 🔄 Game Container -->
+    <div id="game-container" style="display: none;">
+        <h2 id="game-title"></h2>
 
+        <!-- 🔥 Show Turn Indicator -->
+        <div id="turn-indicator"><h3>🎭 Current Turn: Waiting...</h3></div>
+
+        <!-- 🔄 Display game status & highest bet -->
+        <div id="game-status"></div>
+        <div id="highest-bet"><h3>💵 Highest Bet: 0</h3></div>
+
+        <!-- 🔄 Display players -->
+        <div id="players"></div>
+
+        <!-- 🔄 Community Cards -->
+        <div id="community-cards"><h3>Community Cards</h3></div>
+
+        <!-- 🎴 Player Hand -->
+        <div id="player-hand"><h3>Your Hand</h3></div>
+
+        <!-- 💰 Betting Controls -->
         <div id="actions">
             <input type="number" id="betAmount" placeholder="Enter bet amount">
             <button onclick="placeBet()">Bet</button>
@@ -32,10 +48,6 @@
             <button onclick="fold()">Fold</button>
             <button onclick="leaveGame()" class="leave-btn">Leave Game</button>
         </div>
-
-
     </div>
-
-    <div id="game-status"></div>
 </body>
 </html>

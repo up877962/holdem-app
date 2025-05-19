@@ -24,28 +24,34 @@ class PokerGame:
         return None
 
     def get_current_player(self):
-        """Returns the player whose turn it is."""
         return self.players[self.current_turn_index] if self.players else None
 
     def next_turn(self):
-        """Moves turn forward to the next active player (skips folded players)."""
+        """Moves turn forward to the next active player."""
         active_players = [p for p in self.players if p.status != "folded"]
         if active_players:
             self.current_turn_index = (self.current_turn_index + 1) % len(active_players)
             print(f"👤 It's now {self.get_current_player().name}'s turn!")
 
     def start_game(self):
-        """Start game with preflop hole cards."""
-        self.deck = Deck()
-        self.community_cards = []
+        """Start a new game, ensuring players persist while resetting their hands."""
+        if not self.players:  # 🚨 If no players exist, do NOT reset the game!
+            print("❌ Error: No players found! Can't start a new game without them.")
+            return
+
+        self.deck = Deck()  # 🔥 Reset deck
+        self.community_cards = []  # 🔥 Clear old community cards
         self.pot = 0
         self.current_round = 0
-        self.current_turn_index = 0  # 🔥 Set first player's turn
+        self.current_turn_index = 0
 
+        # 🔄 Reset players WITHOUT removing them
         for player in self.players:
             player.reset_for_new_game()
-            player.hand = self.deck.deal(2)
+            player.hand = self.deck.deal(2)  # 🔥 Assign new hole cards
             print(f"🃏 {player.name} received: {player.hand}")
+
+        print("♻️ New round started! Players have been retained.")
 
     def process_action(self, name, action, amount=0):
         """Ensure actions follow turn order correctly."""
@@ -57,7 +63,6 @@ class PokerGame:
 
         print(f"🃏 Processing {name}'s action: {action}")
 
-        # 🔄 Ensure `highest_bet` is defined before using it
         highest_bet = max((p.bet_amount for p in self.players if p.status != "folded"), default=0)
 
         if action == "fold":
@@ -73,17 +78,16 @@ class PokerGame:
 
         current_player.has_acted = True
 
-        # 🔄 Move to next round if all bets match
         active_players = [p for p in self.players if p.status != "folded"]
         if all(p.has_acted for p in active_players) and all(p.bet_amount == highest_bet for p in active_players):
             print("🔄 All players have acted, advancing round!")
             self.next_round()
 
-        self.next_turn()  # 🔥 Move turn forward
+        self.next_turn()
 
     def next_round(self):
         """Advance the game to the next round."""
-        if self.current_round + 1 >= len(self.rounds):  # Prevent out-of-range access
+        if self.current_round + 1 >= len(self.rounds):
             print("🏁 Game has reached showdown—no more rounds to advance!")
             return {"winner": self.determine_winner(), "pot": self.pot}
 
@@ -97,36 +101,50 @@ class PokerGame:
             self.community_cards.append(self.deck.deal(1)[0])
             print(f"🃏 {self.rounds[self.current_round]} card added: {self.community_cards[-1]}")
 
-    def get_state(self):
-        return {
-            "players": [
-                {
-                    "name": p.name,
-                    "chips": p.chips,
-                    "status": p.status,
-                    "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if p.hand else []
-                }
-                for p in self.players
-            ],
-            "pot": self.pot,
-            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in self.community_cards],
-            "current_round": self.rounds[self.current_round],
-            "current_player": self.get_current_player().name if self.get_current_player() else None,
-        }
-
     def determine_winner(self):
-        """Evaluate the best poker hand and declare a winner automatically."""
+        """Evaluate the best poker hand and declare a winner."""
         best_hand = None
         winner = None
 
         for player in self.players:
             if player.status != "folded":
-                hand_strength = evaluate_hand(
-                    player.hand + self.community_cards)  # 🔥 Combine player hand with community cards
+                hand_strength = evaluate_hand(player.hand + self.community_cards)
                 if not best_hand or hand_strength > best_hand:
                     best_hand = hand_strength
                     winner = player.name
 
         print(f"🏆 Winner determined: {winner}")
         return winner
+
+    def get_state(self):
+        if not self.players:  # 🚨 Prevent empty player lists from breaking the game
+            print("❌ Error: No players found when updating game state!")
+            return {"error": "No players found!"}
+
+        highest_bet = max((p.bet_amount for p in self.players if p.status != "folded"), default=0)
+
+        return {
+            "players": [
+                {
+                    "name": p.name,
+                    "chips": p.chips,
+                    "status": p.status,
+                    "bet_amount": p.bet_amount,
+                    "call_amount": max(0, highest_bet - p.bet_amount),
+                    "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if isinstance(p.hand,
+                                                                                                   list) and p.hand else []
+                    # 🔥 Ensure hands are included only if valid
+                }
+                for p in self.players if p.name and isinstance(p.hand, list)
+                # 🚨 Prevent including invalid/null players
+            ],
+            "pot": self.pot,
+            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in
+                                self.community_cards] if self.community_cards else [],
+            "current_round": self.rounds[self.current_round],
+            "current_player": self.get_current_player().name if self.get_current_player() else None,
+            "highest_bet": highest_bet
+        }
+
+
 

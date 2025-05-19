@@ -37,13 +37,11 @@ function joinGame(gameId) {
     socket.emit("join_game", { game_id: gameId, name: playerName });
 }
 
-// 🔄 Update game state for all players
 socket.on("game_state", function(data) {
     console.log("📡 Game State Updated:", data);
     document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot} | 🔄 Current Round: ${data.current_round}`;
-
-    // 🔥 Show whose turn it is
     document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player}`;
+    document.getElementById("highest-bet").innerHTML = `💵 Highest Bet: ${data.highest_bet}`;
 
     // 🔄 Display community cards
     let communityCardsContainer = document.getElementById("community-cards");
@@ -55,20 +53,23 @@ socket.on("game_state", function(data) {
         communityCardsContainer.appendChild(cardDiv);
     });
 
-    // 🔄 Display player hand (only for the correct player)
+    // 🔄 Display player hand (Make sure it updates correctly!)
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
 
     let currentPlayerData = data.players.find(p => p.name === playerName);
-    if (currentPlayerData && currentPlayerData.hand.length > 0) {
+    if (currentPlayerData && currentPlayerData.hand && currentPlayerData.hand.length > 0) {
         currentPlayerData.hand.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
             cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
             playerHandContainer.appendChild(cardDiv);
         });
+    } else {
+        console.warn("❌ No hand data found for player:", playerName);
     }
 });
+
 
 // 🏆 Announce winner & auto-restart game
 socket.on("game_result", function(data) {
