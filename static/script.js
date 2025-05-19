@@ -39,12 +39,15 @@ function joinGame(gameId) {
 
 // 🔄 Update game state for all players
 socket.on("game_state", function(data) {
-    console.log("📡 Game State Updated: ", data);
+    console.log("📡 Game State Updated:", data);
     document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot} | 🔄 Current Round: ${data.current_round}`;
 
+    // 🔥 Show whose turn it is
+    document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player}`;
+
+    // 🔄 Display community cards
     let communityCardsContainer = document.getElementById("community-cards");
     communityCardsContainer.innerHTML = "<h3>Community Cards</h3>";
-
     data.community_cards.forEach(card => {
         let cardDiv = document.createElement("div");
         cardDiv.className = "card";
@@ -52,28 +55,13 @@ socket.on("game_state", function(data) {
         communityCardsContainer.appendChild(cardDiv);
     });
 
-    let playersContainer = document.getElementById("players");
-    playersContainer.innerHTML = "<h3>Players</h3>";
-
-    data.players.forEach(player => {
-        let playerDiv = document.createElement("div");
-        playerDiv.className = "player";
-        playerDiv.innerHTML = `<h4>${player.name} (${player.chips} chips)</h4>`;
-        playersContainer.appendChild(playerDiv);
-    });
-});
-
-// 🎴 Handle private hands (only for the current player)
-socket.on("player_hand", function(data) {
-    console.log("🎴 Received player's private hand:", data.hand);
-
+    // 🔄 Display player hand (only for the correct player)
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
 
-    if (!data.hand || data.hand.length === 0) {
-        console.error("❌ Player hand data is missing!");
-    } else {
-        data.hand.forEach(card => {
+    let currentPlayerData = data.players.find(p => p.name === playerName);
+    if (currentPlayerData && currentPlayerData.hand.length > 0) {
+        currentPlayerData.hand.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
             cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
@@ -86,24 +74,26 @@ socket.on("player_hand", function(data) {
 socket.on("game_result", function(data) {
     alert(`🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`);
 
-    // 🔄 Automatically start a new round after 5 seconds
     setTimeout(() => {
         socket.emit("start_new_game");
     }, 5000);
 });
 
-// 🔄 Place a bet
+// 🔄 Place a bet (Fixed Button Functionality)
 function placeBet() {
-    if (!currentGameId || !playerName) return;
+    if (!currentGameId || !playerName) {
+        alert("❌ Error: No valid game or player detected.");
+        return;
+    }
 
     let betAmount = document.getElementById("betAmount").value;
 
-    // Validate input
-    if (!betAmount || betAmount <= 0) {
+    if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
         alert("Please enter a valid bet amount!");
         return;
     }
 
+    console.log(`🔵 Betting ${betAmount} chips`);
     socket.emit("player_action", {
         game_id: currentGameId,
         name: playerName,
