@@ -1,7 +1,7 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-color: #207733;
+    background-color: #207733; /* ✅ Casino green background */
     color: white;
 }
 
@@ -10,12 +10,30 @@ body {
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
+    padding: 20px;
 }
 
-#community-cards, #players {
+#poker-table {
+    width: 80%;
+    height: 400px;
+    background-color: #165026; /* ✅ Darker green felt texture */
+    border-radius: 50%;
+    border: 10px solid #8B5A2B; /* ✅ Brown border for realism */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin: auto;
+}
+
+#community-cards {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    background-color: #1E402B;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .card {
@@ -31,12 +49,17 @@ body {
     justify-content: center;
     border: 2px solid black;
     border-radius: 8px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* ✅ Adds depth */
     margin: 5px;
 }
 
-.hand {
+#players {
     display: flex;
-    gap: 10px;
+    justify-content: space-around;
+    width: 100%;
+    position: absolute;
+    top: 10px; /* ✅ Positions players around the table */
+    left: 0;
 }
 
 .player {
@@ -45,13 +68,24 @@ body {
     align-items: center;
     background-color: #222;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 10px;
+    width: 120px;
+    text-align: center;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.hand {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .leave-btn {
     background-color: #c0392b;
     color: white;
     font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
 }
 
 .leave-btn:hover {

@@ -86,13 +86,15 @@ class PokerGame:
         self.next_turn()
 
     def next_round(self):
-        """Advance the game to the next round."""
-        if self.current_round + 1 >= len(self.rounds):
-            print("🏁 Game has reached showdown—no more rounds to advance!")
+        """Advance the game to the next round, ensuring correct indexing."""
+        if self.current_round + 1 >= len(self.rounds):  # 🏁 Ensure showdown is reached at the right time
+            print("🏆 Game has reached showdown!")
+            self.current_round = len(self.rounds) - 1  # 🔥 Explicitly set to "showdown"
             return {"winner": self.determine_winner(), "pot": self.pot}
 
-        print(f"🔄 Moving to next round: {self.rounds[self.current_round + 1]}")
-        self.current_round += 1
+        self.current_round += 1  # ✅ Properly increment rounds before updating UI
+
+        print(f"🔄 Moving to next round: {self.rounds[self.current_round]}")
 
         if self.rounds[self.current_round] == "flop":
             self.community_cards.extend(self.deck.deal(3))

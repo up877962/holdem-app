@@ -42,6 +42,7 @@ def handle_join_game(data):
         print(f"🎴 Sending hand to {player.name}: {player.hand}")
         emit('player_hand', {"hand": player.hand}, room=request.sid)
 
+
 @socketio.on('player_action')
 def handle_action(data):
     print(f"⚡ Flask received action: {data}")
@@ -53,16 +54,20 @@ def handle_action(data):
 
         game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
 
-        # 🏆 **Announce winner & trigger game reset**
+        # 🏆 **Announce winner & trigger game reset immediately**
         if game.rounds[game.current_round] == "showdown":
             winner_data = {"winner": game.determine_winner(), "pot": game.pot}
             socketio.emit("game_result", winner_data)  # Send to all clients
             print(f"🎉 Winner announced: {winner_data}")
 
+            # 🔄 **Immediately update the game state so UI syncs correctly**
+            socketio.emit("game_state", game.get_state())
+
             # 🔄 **Start new game after 5 seconds**
             socketio.emit("start_new_game")
+            return  # ✅ Prevent further actions from disrupting the state
 
-        socketio.emit("game_state", game.get_state())  # Update frontend state
+        socketio.emit("game_state", game.get_state())  # ✅ Ensure UI updates properly
 
 
 @socketio.on('start_new_game')

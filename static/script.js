@@ -40,7 +40,7 @@ function joinGame(gameId) {
 socket.on("game_state", function(data) {
     console.log("📡 Game State Updated:", data);
 
-    document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot ?? 0} | 🔄 Current Round: ${data.current_round ?? "Waiting..."}`;
+    document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot ?? 0}`;
     document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player ?? "Waiting..."}`;
     document.getElementById("highest-bet").innerHTML = `💵 Highest Bet: ${data.highest_bet ?? 0}`;
 
@@ -63,7 +63,7 @@ socket.on("game_state", function(data) {
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
 
     let currentPlayerData = data.players?.find(p => p.name === playerName);
-    if (currentPlayerData && Array.isArray(currentPlayerData.hand) && currentPlayerData.hand.length > 0) {  // 🔥 Ensure hand data is valid
+    if (currentPlayerData && Array.isArray(currentPlayerData.hand) && currentPlayerData.hand.length > 0) {
         currentPlayerData.hand.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
@@ -75,6 +75,7 @@ socket.on("game_state", function(data) {
         console.warn("❌ No hand data found for player:", playerName);
     }
 });
+
 
 
 
