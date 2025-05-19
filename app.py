@@ -68,12 +68,14 @@ def handle_action(data):
 @socketio.on('start_new_game')
 def start_new_game():
     global games
-    game_id = f"game-{len(games) + 1}"  # Create a new game ID
-    games[game_id] = PokerGame()  # Reset game instance
-    games[game_id].start_game()
+    game_id = max(games.keys(), key=lambda x: int(x.split("-")[-1]))  # Keep latest game
+    game = games[game_id]  # 🔥 Keep existing game instead of overwriting
 
-    socketio.emit("game_state", games[game_id].get_state())  # Broadcast fresh game state
-    print("♻️ New round started!")
+    game.start_game()  # 🔄 Reset the game state while keeping players
+
+    socketio.emit("game_state", game.get_state())  # Broadcast fresh game state
+    print("♻️ New round started with existing players!")
+
 
 
 @socketio.on('leave_game')

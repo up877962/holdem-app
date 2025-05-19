@@ -39,26 +39,31 @@ function joinGame(gameId) {
 
 socket.on("game_state", function(data) {
     console.log("📡 Game State Updated:", data);
-    document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot} | 🔄 Current Round: ${data.current_round}`;
-    document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player}`;
-    document.getElementById("highest-bet").innerHTML = `💵 Highest Bet: ${data.highest_bet}`;
+
+    document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot ?? 0} | 🔄 Current Round: ${data.current_round ?? "Waiting..."}`;
+    document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player ?? "Waiting..."}`;
+    document.getElementById("highest-bet").innerHTML = `💵 Highest Bet: ${data.highest_bet ?? 0}`;
 
     // 🔄 Display community cards
     let communityCardsContainer = document.getElementById("community-cards");
     communityCardsContainer.innerHTML = "<h3>Community Cards</h3>";
-    data.community_cards.forEach(card => {
-        let cardDiv = document.createElement("div");
-        cardDiv.className = "card";
-        cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
-        communityCardsContainer.appendChild(cardDiv);
-    });
+    if (data.community_cards && data.community_cards.length > 0) {
+        data.community_cards.forEach(card => {
+            let cardDiv = document.createElement("div");
+            cardDiv.className = "card";
+            cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
+            communityCardsContainer.appendChild(cardDiv);
+        });
+    } else {
+        communityCardsContainer.innerHTML += "<p>No community cards yet.</p>";
+    }
 
-    // 🔄 Display player hand (Make sure it updates correctly!)
+    // 🔄 Display player hand
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
 
-    let currentPlayerData = data.players.find(p => p.name === playerName);
-    if (currentPlayerData && currentPlayerData.hand && currentPlayerData.hand.length > 0) {
+    let currentPlayerData = data.players?.find(p => p.name === playerName);
+    if (currentPlayerData && Array.isArray(currentPlayerData.hand) && currentPlayerData.hand.length > 0) {  // 🔥 Ensure hand data is valid
         currentPlayerData.hand.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
@@ -66,9 +71,12 @@ socket.on("game_state", function(data) {
             playerHandContainer.appendChild(cardDiv);
         });
     } else {
+        playerHandContainer.innerHTML += "<p>No cards yet.</p>";
         console.warn("❌ No hand data found for player:", playerName);
     }
 });
+
+
 
 
 // 🏆 Announce winner & auto-restart game

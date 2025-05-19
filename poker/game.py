@@ -133,7 +133,7 @@ class PokerGame:
                     "call_amount": max(0, highest_bet - p.bet_amount),
                     "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if isinstance(p.hand,
                                                                                                    list) and p.hand else []
-                    # 🔥 Ensure hands are included only if valid
+                    # 🔥 Ensure hands are sent in game state
                 }
                 for p in self.players if p.name and isinstance(p.hand, list)
                 # 🚨 Prevent including invalid/null players
@@ -145,6 +145,7 @@ class PokerGame:
             "current_player": self.get_current_player().name if self.get_current_player() else None,
             "highest_bet": highest_bet
         }
+
 
 
 
