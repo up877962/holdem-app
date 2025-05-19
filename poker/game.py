@@ -2,6 +2,7 @@ from poker.deck import Deck
 from poker.hand_evaluator import evaluate_hand
 from poker.player import Player
 
+
 class PokerGame:
     def __init__(self):
         self.players = []
@@ -32,18 +33,31 @@ class PokerGame:
         for player in self.players:
             player.reset_for_new_game()
             player.hand = self.deck.deal(2)
-            print(f"🃏 {player.name} received: {player.hand}")  # Debugging line
+            print(f"🃏 {player.name} received: {player.hand}")
 
     def next_round(self):
-        if self.current_round < len(self.rounds) - 1:
-            self.current_round += 1
-            if self.rounds[self.current_round] == "flop":
-                self.community_cards.extend(self.deck.deal(3))
-            elif self.rounds[self.current_round] in ["turn", "river"]:
-                self.community_cards.append(self.deck.deal(1)[0])
+        if self.current_round + 1 >= len(self.rounds):  # Prevent out-of-range access
+            print("🏁 Game has reached showdown—no more rounds to advance!")
+            return
+
+        print(f"🔄 Moving to next round: {self.rounds[self.current_round + 1]}")
+        self.current_round += 1
+
+        if self.rounds[self.current_round] == "flop":
+            self.community_cards.extend(self.deck.deal(3))
+            print(f"🃏 Flop cards revealed: {self.community_cards}")
+        elif self.rounds[self.current_round] in ["turn", "river"]:
+            self.community_cards.append(self.deck.deal(1)[0])
+            print(f"🃏 {self.rounds[self.current_round]} card added: {self.community_cards[-1]}")
+
+        if self.rounds[self.current_round] == "showdown":
+            print(f"🏆 Showdown reached! Determining winner...")
+            return {"winner": self.determine_winner(), "pot": self.pot}
+
+        return None
 
     def process_action(self, name, action, amount=0):
-        """Players make betting decisions (Raise, Call, Fold) correctly."""
+        """Players make betting decisions (Raise, Call, Fold) correctly and advance rounds when appropriate."""
         player = self.get_player(name)
         if not player:
             return
@@ -63,13 +77,15 @@ class PokerGame:
 
         player.has_acted = True
 
-        # Advance round only if all non-folded players have acted
+        # 🔥 **New Logic: Move to next round if all active players match the highest bet**
         active_players = [p for p in self.players if p.status != "folded"]
-        if all(p.has_acted for p in active_players):
-            self.next_round()
 
-        for p in self.players:
-            p.has_acted = False
+        if all(p.has_acted for p in active_players):  # Everyone has acted
+            if all(p.bet_amount == highest_bet for p in active_players):  # No pending raises
+                self.next_round()
+
+            for p in self.players:
+                p.has_acted = False  # Reset for next round
 
     def get_state(self):
         return {
@@ -81,7 +97,7 @@ class PokerGame:
         }
 
     def determine_winner(self):
-        """Evaluate the best poker hand and declare a winner."""
+        """Evaluate the best poker hand and declare a winner automatically."""
         best_hand = None
         winner = None
 
@@ -93,4 +109,3 @@ class PokerGame:
                     winner = player.name
 
         return winner
-

@@ -36,37 +36,45 @@ def handle_join_game(data):
         emit('game_state', game.get_state(), broadcast=True)
 
         player = game.get_player(player_name)
-        if player:
-            # 🔥 Fix: Ensure the hand is properly set before sending it
-            if not player.hand:
-                player.hand = game.deck.deal(2)
+        if player and not player.hand:
+            player.hand = game.deck.deal(2)
 
-            print(f"🎴 Sending hand to {player.name}: {player.hand}")  # Debugging confirmation
-            emit('player_hand', {"hand": player.hand}, room=request.sid)
-
-
-
+        print(f"🎴 Sending hand to {player.name}: {player.hand}")
+        emit('player_hand', {"hand": player.hand}, room=request.sid)
 
 @socketio.on('player_action')
 def handle_action(data):
+    print(f"⚡ Flask received action: {data}")
+
     game_id = data['game_id']
     if game_id in games:
         game = games[game_id]
+        print("✅ Game found, processing action...")
+
         game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
 
-        # Broadcast updated game state to all players
-        emit('game_state', game.get_state(), broadcast=True)
+        # 🏆 **Announce winner & trigger game reset**
+        if game.rounds[game.current_round] == "showdown":
+            winner_data = {"winner": game.determine_winner(), "pot": game.pot}
+            socketio.emit("game_result", winner_data)  # Send to all clients
+            print(f"🎉 Winner announced: {winner_data}")
+
+            # 🔄 **Start new game after 5 seconds**
+            socketio.emit("start_new_game")
+
+        socketio.emit("game_state", game.get_state())  # Update frontend state
 
 
+@socketio.on('start_new_game')
+def start_new_game():
+    global games
+    game_id = f"game-{len(games) + 1}"  # Create a new game ID
+    games[game_id] = PokerGame()  # Reset game instance
+    games[game_id].start_game()
 
-@socketio.on('reveal')
-def handle_reveal(data):
-    game_id = data['game_id']
-    if game_id in games:
-        game = games[game_id]
-        winner = game.determine_winner()
-        emit('game_result', {"winner": winner, "pot": game.pot}, broadcast=True)
-        emit('game_state', game.get_state(), broadcast=True)
+    socketio.emit("game_state", games[game_id].get_state())  # Broadcast fresh game state
+    print("♻️ New round started!")
+
 
 @socketio.on('leave_game')
 def handle_leave(data):
@@ -81,7 +89,6 @@ def handle_leave(data):
             del games[game_id]
 
     emit('update_games', list(games.keys()), broadcast=True)
-
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

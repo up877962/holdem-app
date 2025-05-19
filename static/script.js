@@ -2,8 +2,10 @@ var socket = io.connect("http://localhost:5000");
 var currentGameId = null;
 var playerName = null;
 
+// 🔄 Request available games on load
 socket.emit("get_games");
 
+// 🔄 Update game list dynamically
 socket.on("update_games", function(gameList) {
     var gameListContainer = document.getElementById("game-list");
     gameListContainer.innerHTML = "";
@@ -15,10 +17,12 @@ socket.on("update_games", function(gameList) {
     });
 });
 
+// 🔄 Create a new game
 function createGame() {
     socket.emit("create_game");
 }
 
+// 🔄 Join an existing game
 function joinGame(gameId) {
     playerName = prompt("Enter your name:");
     if (!playerName) return;
@@ -33,8 +37,9 @@ function joinGame(gameId) {
     socket.emit("join_game", { game_id: gameId, name: playerName });
 }
 
-// Update game state for all players
+// 🔄 Update game state for all players
 socket.on("game_state", function(data) {
+    console.log("📡 Game State Updated: ", data);
     document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot} | 🔄 Current Round: ${data.current_round}`;
 
     let communityCardsContainer = document.getElementById("community-cards");
@@ -58,7 +63,7 @@ socket.on("game_state", function(data) {
     });
 });
 
-// Handle private hands (only for the current player)
+// 🎴 Handle private hands (only for the current player)
 socket.on("player_hand", function(data) {
     console.log("🎴 Received player's private hand:", data.hand);
 
@@ -77,42 +82,62 @@ socket.on("player_hand", function(data) {
     }
 });
 
+// 🏆 Announce winner & auto-restart game
+socket.on("game_result", function(data) {
+    alert(`🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`);
 
+    // 🔄 Automatically start a new round after 5 seconds
+    setTimeout(() => {
+        socket.emit("start_new_game");
+    }, 5000);
+});
 
-// Handle betting actions
-function placeBet(amount) {
+// 🔄 Place a bet
+function placeBet() {
     if (!currentGameId || !playerName) return;
-    socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "raise", amount: amount });
+
+    let betAmount = document.getElementById("betAmount").value;
+
+    // Validate input
+    if (!betAmount || betAmount <= 0) {
+        alert("Please enter a valid bet amount!");
+        return;
+    }
+
+    socket.emit("player_action", {
+        game_id: currentGameId,
+        name: playerName,
+        action: "raise",
+        amount: parseInt(betAmount)
+    });
 }
 
+// 🔄 Call a bet
 function call() {
-    if (!currentGameId || !playerName) return;
-    console.log(`🔵 ${playerName} calls`);
-    socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "call" });
+    console.log("🔵 Call button clicked! Sending action...");
+    if (!currentGameId || !playerName) {
+        console.error("❌ Call failed: Missing Game ID or Player Name!");
+        return;
+    }
+
+    socket.emit("player_action", {
+        game_id: currentGameId,
+        name: playerName,
+        action: "call"
+    });
 }
 
+// 🔄 Fold hand
 function fold() {
     if (!currentGameId || !playerName) return;
     console.log(`🚶‍♂️ ${playerName} folds`);
     socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "fold" });
 }
 
-
-function revealWinner() {
-    if (!currentGameId) return;
-    console.log("🏆 Revealing winner...");
-    socket.emit("reveal", { game_id: currentGameId });
-}
-
-// Leave game
+// 🔄 Leave game
 function leaveGame() {
     socket.emit("leave_game", { game_id: currentGameId, name: playerName });
 
     document.getElementById("game-container").style.display = "none";
     document.getElementById("game-selection").style.display = "block";
 }
-
-// Reveal winner & restart game automatically
-socket.on("game_result", function(data) {
-    alert(`🏆 Winner: ${data.winner}\n💰 Total Pot: ${data.pot}`);
-});

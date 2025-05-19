@@ -24,13 +24,14 @@
             <div id="players"></div>
             <div id="player-hand"></div>
 
-            <div id="actions">
-            <button onclick="placeBet(10)">Bet 10 Chips</button>
+        <div id="actions">
+            <input type="number" id="betAmount" placeholder="Enter bet amount">
+            <button onclick="placeBet()">Bet</button>
             <button onclick="call()">Call</button>
             <button onclick="fold()">Fold</button>
-            <button onclick="revealWinner()">Reveal Winner</button>
-            <button onclick="leaveGame()" class="leave-btn">Leave Game</button> <!-- Added Leave Game -->
+            <button onclick="leaveGame()" class="leave-btn">Leave Game</button>
         </div>
+
 
     </div>
 
