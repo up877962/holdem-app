@@ -54,20 +54,19 @@ def handle_action(data):
 
         game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
 
-        # 🏆 **Announce winner & trigger game reset immediately**
-        if game.rounds[game.current_round] == "showdown":
-            winner_data = {"winner": game.determine_winner(), "pot": game.pot}
-            socketio.emit("game_result", winner_data)  # Send to all clients
+        # 🏆 **Check if only one player remains (Immediate Win Condition)**
+        active_players = [p for p in game.players if p.status != "folded"]
+        if len(active_players) == 1:
+            winner_data = {"winner": active_players[0].name, "pot": game.pot}
+            socketio.emit("game_result", winner_data)  # ✅ Show the winner pop-up
             print(f"🎉 Winner announced: {winner_data}")
 
-            # 🔄 **Immediately update the game state so UI syncs correctly**
-            socketio.emit("game_state", game.get_state())
-
-            # 🔄 **Start new game after 5 seconds**
+            # 🔄 **Start a new game after 5 seconds (same logic as normal win)**
             socketio.emit("start_new_game")
             return  # ✅ Prevent further actions from disrupting the state
 
-        socketio.emit("game_state", game.get_state())  # ✅ Ensure UI updates properly
+        socketio.emit("game_state", game.get_state())  # ✅ Ensure UI updates
+
 
 
 @socketio.on('start_new_game')
