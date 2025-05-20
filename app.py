@@ -54,18 +54,30 @@ def handle_action(data):
 
         game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
 
-        # 🏆 **Check if only one player remains (Immediate Win Condition)**
         active_players = [p for p in game.players if p.status != "folded"]
+
+        # 🏆 **Check if only one player remains (Win by fold)**
         if len(active_players) == 1:
             winner_data = {"winner": active_players[0].name, "pot": game.pot}
-            socketio.emit("game_result", winner_data)  # ✅ Show the winner pop-up
-            print(f"🎉 Winner announced: {winner_data}")
+            socketio.emit("game_result", winner_data)  # ✅ Show winner pop-up
+            print(f"🎉 Winner announced due to fold: {winner_data}")
 
-            # 🔄 **Start a new game after 5 seconds (same logic as normal win)**
-            socketio.emit("start_new_game")
-            return  # ✅ Prevent further actions from disrupting the state
+            socketio.emit("start_new_game")  # ✅ Restart game after fold
+            return  # ✅ Prevent further action processing
 
-        socketio.emit("game_state", game.get_state())  # ✅ Ensure UI updates
+        # 🏆 **Check if round reached showdown (Normal game end)**
+        if game.rounds[game.current_round] == "showdown":
+            winner_data = {"winner": game.determine_winner(), "pot": game.pot}
+            socketio.emit("game_result", winner_data)  # ✅ Show winner pop-up
+            print(f"🎉 Winner announced at showdown: {winner_data}")
+
+            socketio.emit("start_new_game")  # ✅ Restart game after showdown
+            return  # ✅ Prevent further action processing
+
+        # 🔄 **Ensure UI refreshes properly during normal play**
+        socketio.emit("game_state", game.get_state())
+
+
 
 
 
