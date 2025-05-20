@@ -58,6 +58,16 @@ socket.on("game_state", function(data) {
         communityCardsContainer.innerHTML += "<p>No community cards yet.</p>";
     }
 
+    // 🔄 Display players and their balances
+    let playersContainer = document.getElementById("players-container");
+    playersContainer.innerHTML = "<h3>Players</h3>";
+    data.players.forEach(player => {
+        let playerDiv = document.createElement("div");
+        playerDiv.className = "player-info";
+        playerDiv.innerHTML = `<strong>${player.name}</strong> - 🪙 Chips: ${player.chips} - ${player.status}`;
+        playersContainer.appendChild(playerDiv);
+    });
+
     // 🔄 Display player hand
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
@@ -76,10 +86,6 @@ socket.on("game_state", function(data) {
     }
 });
 
-
-
-
-
 // 🏆 Announce winner & auto-restart game
 socket.on("game_result", function(data) {
     alert(`🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`);
@@ -89,7 +95,7 @@ socket.on("game_result", function(data) {
     }, 5000);
 });
 
-// 🔄 Place a bet (Fixed Button Functionality)
+// 🔄 Place a bet (Now updates UI instantly)
 function placeBet() {
     if (!currentGameId || !playerName) {
         alert("❌ Error: No valid game or player detected.");
@@ -110,9 +116,12 @@ function placeBet() {
         action: "raise",
         amount: parseInt(betAmount)
     });
+
+    // 🔄 Instantly refresh game state for UI update
+    socket.emit("get_game_state");
 }
 
-// 🔄 Call a bet
+// 🔄 Call a bet (Now refreshes balance immediately)
 function call() {
     console.log("🔵 Call button clicked! Sending action...");
     if (!currentGameId || !playerName) {
@@ -125,13 +134,19 @@ function call() {
         name: playerName,
         action: "call"
     });
+
+    // 🔄 Ensure UI updates instantly
+    socket.emit("get_game_state");
 }
 
-// 🔄 Fold hand
+// 🔄 Fold hand (Now updates balance correctly)
 function fold() {
     if (!currentGameId || !playerName) return;
     console.log(`🚶‍♂️ ${playerName} folds`);
     socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "fold" });
+
+    // 🔄 Refresh game state to reflect balance after fold
+    socket.emit("get_game_state");
 }
 
 // 🔄 Leave game

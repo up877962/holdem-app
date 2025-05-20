@@ -113,32 +113,29 @@ class PokerGame:
                 hand_strength = evaluate_hand(player.hand + self.community_cards)
                 if not best_hand or hand_strength > best_hand:
                     best_hand = hand_strength
-                    winner = player.name
+                    winner = player
 
-        print(f"🏆 Winner determined: {winner}")
-        return winner
+        if winner:
+            print(f"🏆 Winner determined: {winner.name} - Adding {self.pot} to their chips!")
+            winner.award_winnings(self.pot)  # ✅ Correctly credit winnings
+
+        return winner.name if winner else None
 
     def get_state(self):
-        if not self.players:  # 🚨 Prevent empty player lists from breaking the game
-            print("❌ Error: No players found when updating game state!")
-            return {"error": "No players found!"}
-
         highest_bet = max((p.bet_amount for p in self.players if p.status != "folded"), default=0)
 
         return {
             "players": [
                 {
                     "name": p.name,
-                    "chips": p.chips,
+                    "chips": p.chips,  # ✅ Show balance
                     "status": p.status,
                     "bet_amount": p.bet_amount,
                     "call_amount": max(0, highest_bet - p.bet_amount),
                     "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if isinstance(p.hand,
                                                                                                    list) and p.hand else []
-                    # 🔥 Ensure hands are sent in game state
                 }
                 for p in self.players if p.name and isinstance(p.hand, list)
-                # 🚨 Prevent including invalid/null players
             ],
             "pot": self.pot,
             "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in
@@ -147,6 +144,7 @@ class PokerGame:
             "current_player": self.get_current_player().name if self.get_current_player() else None,
             "highest_bet": highest_bet
         }
+
 
 
 

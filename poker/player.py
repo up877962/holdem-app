@@ -23,3 +23,9 @@ class Player:
         self.bet_amount += amount  # Track total bet for matching calls
         self.has_acted = True
         return amount
+
+    def award_winnings(self, amount):
+        """Credit winnings to the player's balance."""
+        self.chips += amount
+        print(f"💰 {self.name} received {amount} chips! New balance: {self.chips}")
+
