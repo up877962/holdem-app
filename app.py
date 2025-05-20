@@ -106,7 +106,8 @@ def handle_leave(data):
         if not game.players:
             del games[game_id]
 
-    emit('update_games', list(games.keys()), broadcast=True)
+    socketio.emit("game_state", game.get_state())
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
