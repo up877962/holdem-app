@@ -88,12 +88,23 @@ socket.on("game_state", function(data) {
 
 // 🏆 Announce winner & auto-restart game
 socket.on("game_result", function(data) {
-    alert(`🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`);
+    // Create the alert box
+    let alertBox = document.createElement("div");
+    alertBox.innerHTML = `🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`;
+    alertBox.style.cssText = `
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        padding: 20px; background-color: #ffcc00; color: black;
+        font-size: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(alertBox);
 
+    // Remove the alert after 5 seconds and start the new game
     setTimeout(() => {
+        alertBox.remove();
         socket.emit("start_new_game");
     }, 5000);
 });
+
 
 // 🔄 Place a bet (Now updates UI instantly)
 function placeBet() {
