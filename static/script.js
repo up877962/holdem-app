@@ -88,6 +88,9 @@ socket.on("game_state", function(data) {
 
 // 🏆 Announce winner & auto-restart game
 socket.on("game_result", function(data) {
+    // Start the new game immediately
+    socket.emit("start_new_game");
+
     // Create the alert box
     let alertBox = document.createElement("div");
     alertBox.innerHTML = `🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`;
@@ -98,12 +101,12 @@ socket.on("game_result", function(data) {
     `;
     document.body.appendChild(alertBox);
 
-    // Remove the alert after 5 seconds and start the new game
+    // Remove the alert after 5 seconds
     setTimeout(() => {
         alertBox.remove();
-        socket.emit("start_new_game");
     }, 5000);
 });
+
 
 
 // 🔄 Place a bet (Now updates UI instantly)
