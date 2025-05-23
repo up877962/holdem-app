@@ -37,93 +37,73 @@ function joinGame(gameId) {
     socket.emit("join_game", { game_id: gameId, name: playerName });
 }
 
+// 🃏 Game State Updates
 socket.on("game_state", function(data) {
-    console.log("📡 Game State Updated:", data);
-
+    // 🎭 Update turn and bet status
     document.getElementById("game-status").innerHTML = `💰 Pot: ${data.pot ?? 0}`;
     document.getElementById("turn-indicator").innerHTML = `🎭 Current Turn: ${data.current_player ?? "Waiting..."}`;
     document.getElementById("highest-bet").innerHTML = `💵 Highest Bet: ${data.highest_bet ?? 0}`;
 
-    // 🔄 Display community cards
+    // 🃏 Update community cards
     let communityCardsContainer = document.getElementById("community-cards");
     communityCardsContainer.innerHTML = "<h3>Community Cards</h3>";
-    if (data.community_cards && data.community_cards.length > 0) {
+    if (data.community_cards?.length > 0) {
         data.community_cards.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
             cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
             communityCardsContainer.appendChild(cardDiv);
         });
-    } else {
-        communityCardsContainer.innerHTML += "<p>No community cards yet.</p>";
     }
 
-    // 🔄 Display players and their balances
-    let playersContainer = document.getElementById("players-container");
-    playersContainer.innerHTML = "<h3>Players</h3>";
-    data.players.forEach(player => {
-        let playerDiv = document.createElement("div");
-        playerDiv.className = "player-info";
-        playerDiv.innerHTML = `<strong>${player.name}</strong> - 🪙 Chips: ${player.chips} - ${player.status}`;
-        playersContainer.appendChild(playerDiv);
-    });
-
-    // 🔄 Display player hand
+    // 🃏 Update player hand
     let playerHandContainer = document.getElementById("player-hand");
     playerHandContainer.innerHTML = "<h3>Your Hand</h3>";
-
     let currentPlayerData = data.players?.find(p => p.name === playerName);
-    if (currentPlayerData && Array.isArray(currentPlayerData.hand) && currentPlayerData.hand.length > 0) {
+    if (currentPlayerData?.hand?.length > 0) {
         currentPlayerData.hand.forEach(card => {
             let cardDiv = document.createElement("div");
             cardDiv.className = "card";
             cardDiv.innerHTML = `${card.rank} of ${card.suit}`;
             playerHandContainer.appendChild(cardDiv);
         });
-    } else {
-        playerHandContainer.innerHTML += "<p>No cards yet.</p>";
-        console.warn("❌ No hand data found for player:", playerName);
     }
+
+    // 🔄 Restore player balances
+    let playersContainer = document.getElementById("players-container");
+    playersContainer.innerHTML = "<h3>Players & Balances</h3>";
+    data.players.forEach(player => {
+        let playerDiv = document.createElement("div");
+        playerDiv.className = "player-info";
+        playerDiv.innerHTML = `<strong>${player.name}</strong> - 🪙 Chips: ${player.chips} - ${player.status}`;
+        playersContainer.appendChild(playerDiv);
+    });
 });
 
-// 🏆 Announce winner & auto-restart game
+
+// 🏆 Winner Announcement & Auto-Restart Game
 socket.on("game_result", function(data) {
-    // Start the new game immediately
     socket.emit("start_new_game");
 
-    // Create the alert box
     let alertBox = document.createElement("div");
     alertBox.innerHTML = `🏆 Winner: ${data.winner} | 💰 Pot: ${data.pot}`;
-    alertBox.style.cssText = `
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        padding: 20px; background-color: #ffcc00; color: black;
-        font-size: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    `;
+    alertBox.className = "alert-box";
     document.body.appendChild(alertBox);
 
-    // Remove the alert after 5 seconds
+    setTimeout(() => { alertBox.style.opacity = 1; }, 100);
     setTimeout(() => {
-        alertBox.remove();
+        alertBox.style.opacity = 0;
+        setTimeout(() => alertBox.remove(), 500);
     }, 5000);
 });
 
-
-
-// 🔄 Place a bet (Now updates UI instantly)
+// 🔄 Betting Functions
 function placeBet() {
-    if (!currentGameId || !playerName) {
-        alert("❌ Error: No valid game or player detected.");
-        return;
-    }
-
     let betAmount = document.getElementById("betAmount").value;
-
     if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
-        alert("Please enter a valid bet amount!");
-        return;
+        return showError("Invalid bet amount.");
     }
 
-    console.log(`🔵 Betting ${betAmount} chips`);
     socket.emit("player_action", {
         game_id: currentGameId,
         name: playerName,
@@ -131,42 +111,22 @@ function placeBet() {
         amount: parseInt(betAmount)
     });
 
-    // 🔄 Instantly refresh game state for UI update
     socket.emit("get_game_state");
 }
 
-// 🔄 Call a bet (Now refreshes balance immediately)
 function call() {
-    console.log("🔵 Call button clicked! Sending action...");
-    if (!currentGameId || !playerName) {
-        console.error("❌ Call failed: Missing Game ID or Player Name!");
-        return;
-    }
-
-    socket.emit("player_action", {
-        game_id: currentGameId,
-        name: playerName,
-        action: "call"
-    });
-
-    // 🔄 Ensure UI updates instantly
+    socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "call" });
     socket.emit("get_game_state");
 }
 
-// 🔄 Fold hand (Now updates balance correctly)
 function fold() {
-    if (!currentGameId || !playerName) return;
-    console.log(`🚶‍♂️ ${playerName} folds`);
     socket.emit("player_action", { game_id: currentGameId, name: playerName, action: "fold" });
-
-    // 🔄 Refresh game state to reflect balance after fold
     socket.emit("get_game_state");
 }
 
-// 🔄 Leave game
+// 🔄 Leave Game
 function leaveGame() {
     socket.emit("leave_game", { game_id: currentGameId, name: playerName });
-
     document.getElementById("game-container").style.display = "none";
     document.getElementById("game-selection").style.display = "block";
 }

@@ -1,93 +1,133 @@
+/* 🎨 General Styles */
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Poppins", sans-serif;
     text-align: center;
-    background-color: #207733; /* ✅ Casino green background */
+    background: linear-gradient(180deg, #135F3E, #0C3B25);
     color: white;
+    margin: 0;
+    padding: 0;
 }
 
-#game-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
-    padding: 20px;
+h1 {
+    font-size: 2.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* 🃏 Poker Table */
 #poker-table {
     width: 80%;
     height: 400px;
-    background-color: #165026; /* ✅ Darker green felt texture */
+    background-color: #1B4D2A;
     border-radius: 50%;
-    border: 10px solid #8B5A2B; /* ✅ Brown border for realism */
+    border: 12px solid #8B5A2B;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
     margin: auto;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.7);
 }
 
-#community-cards {
+/* 🃏 Cards */
+#community-cards, #player-hand {
     display: flex;
+    justify-content: center;
     gap: 10px;
-    margin-bottom: 20px;
-    background-color: #1E402B;
+    flex-wrap: nowrap;
+    align-items: center;
     padding: 10px;
-    border-radius: 10px;
+    margin-top: 10px;
 }
 
 .card {
-    width: 80px;
-    height: 120px;
-    background-color: white;
-    color: black;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid black;
-    border-radius: 8px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* ✅ Adds depth */
-    margin: 5px;
-}
-
-#players {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    position: absolute;
-    top: 10px; /* ✅ Positions players around the table */
-    left: 0;
-}
-
-.player {
+    width: 100px; /* Slightly wider cards */
+    height: 150px; /* Taller cards for better fit */
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #222;
+    justify-content: center;
+    background: white;
+    color: black;
+    font-size: 16px; /* Smaller font to prevent overflow */
+    font-weight: bold;
+    text-align: center;
+    border: 3px solid black;
+    border-radius: 12px;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.6);
+    padding: 5px; /* Adds space inside the card */
+    box-sizing: border-box; /* Ensures padding doesn't expand the size */
+    word-wrap: break-word; /* Allows wrapping to prevent long words from overflowing */
+}
+
+
+.card:hover {
+    transform: scale(1.1);
+}
+
+/* 🎭 Players */
+#players-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.player-info {
+    background: #222;
     padding: 10px;
-    border-radius: 10px;
-    width: 120px;
+    border-radius: 8px;
+    width: 160px;
     text-align: center;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
-.hand {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
+/* 🔘 Action Buttons */
+#actions {
+    margin-top: 20px;
+}
+
+#actions button {
+    background: #FFD700;
+    color: black;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#actions button:hover {
+    background: #FFA500;
+    transform: scale(1.1);
 }
 
 .leave-btn {
     background-color: #c0392b;
     color: white;
     font-weight: bold;
-    padding: 5px 10px;
-    border-radius: 5px;
+    padding: 8px 12px;
+    border-radius: 6px;
 }
 
 .leave-btn:hover {
     background-color: #e74c3c;
+}
+
+/* 🏆 Winner Announcement */
+.alert-box {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 20px;
+    background-color: #ffcc00;
+    color: black;
+    font-size: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
 }
