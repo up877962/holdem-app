@@ -35,20 +35,19 @@ class PokerGame:
 
     def start_game(self):
         """Start a new game, ensuring players persist while resetting their hands."""
-        if not self.players:  # 🚨 If no players exist, do NOT reset the game!
+        if not self.players:
             print("❌ Error: No players found! Can't start a new game without them.")
             return
 
-        self.deck = Deck()  # 🔥 Reset deck
-        self.community_cards = []  # 🔥 Clear old community cards
+        self.deck = Deck()
+        self.community_cards = []
         self.pot = 0
         self.current_round = 0
         self.current_turn_index = 0
 
-        # 🔄 Reset players WITHOUT removing them
         for player in self.players:
             player.reset_for_new_game()
-            player.hand = self.deck.deal(2)  # 🔥 Assign new hole cards
+            player.hand = self.deck.deal(2)
             print(f"🃏 {player.name} received: {player.hand}")
 
         print("♻️ New round started! Players have been retained.")
@@ -79,6 +78,15 @@ class PokerGame:
         current_player.has_acted = True
 
         active_players = [p for p in self.players if p.status != "folded"]
+
+        if len(active_players) == 1:
+            winner = active_players[0]
+            winner.award_winnings(self.pot)  # ✅ Correctly award pot to winner
+            winner_data = {"winner": winner.name, "pot": self.pot}
+            print(f"🎉 Winner announced due to fold: {winner_data}")
+
+            return winner_data
+
         if all(p.has_acted for p in active_players) and all(p.bet_amount == highest_bet for p in active_players):
             print("🔄 All players have acted, advancing round!")
             self.next_round()
@@ -87,13 +95,12 @@ class PokerGame:
 
     def next_round(self):
         """Advance the game to the next round, ensuring correct indexing."""
-        if self.current_round + 1 >= len(self.rounds):  # 🏁 Ensure showdown is reached at the right time
+        if self.current_round + 1 >= len(self.rounds):
             print("🏆 Game has reached showdown!")
-            self.current_round = len(self.rounds) - 1  # 🔥 Explicitly set to "showdown"
+            self.current_round = len(self.rounds) - 1
             return {"winner": self.determine_winner(), "pot": self.pot}
 
-        self.current_round += 1  # ✅ Properly increment rounds before updating UI
-
+        self.current_round += 1
         print(f"🔄 Moving to next round: {self.rounds[self.current_round]}")
 
         if self.rounds[self.current_round] == "flop":
@@ -117,7 +124,7 @@ class PokerGame:
 
         if winner:
             print(f"🏆 Winner determined: {winner.name} - Adding {self.pot} to their chips!")
-            winner.award_winnings(self.pot)  # ✅ Correctly credit winnings
+            winner.award_winnings(self.pot)
 
         return winner.name if winner else None
 
@@ -128,24 +135,17 @@ class PokerGame:
             "players": [
                 {
                     "name": p.name,
-                    "chips": p.chips,  # ✅ Show balance
+                    "chips": p.chips,
                     "status": p.status,
                     "bet_amount": p.bet_amount,
                     "call_amount": max(0, highest_bet - p.bet_amount),
-                    "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if isinstance(p.hand,
-                                                                                                   list) and p.hand else []
+                    "hand": [{"rank": c["rank"], "suit": c["suit"]} for c in p.hand] if isinstance(p.hand, list) and p.hand else []
                 }
                 for p in self.players if p.name and isinstance(p.hand, list)
             ],
             "pot": self.pot,
-            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in
-                                self.community_cards] if self.community_cards else [],
+            "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in self.community_cards] if self.community_cards else [],
             "current_round": self.rounds[self.current_round],
             "current_player": self.get_current_player().name if self.get_current_player() else None,
             "highest_bet": highest_bet
         }
-
-
-
-
-
