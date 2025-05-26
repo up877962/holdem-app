@@ -6,6 +6,8 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 games = {}
+waiting_players = {}  # ✅ Track players waiting for the next game
+
 
 @app.route('/')
 def index():
@@ -21,6 +23,7 @@ def handle_create_game():
     games[game_id] = PokerGame()
     emit('update_games', list(games.keys()), broadcast=True)
 
+
 @socketio.on('join_game')
 def handle_join_game(data):
     game_id = data['game_id']
@@ -28,19 +31,29 @@ def handle_join_game(data):
 
     if game_id in games:
         game = games[game_id]
-        game.add_player(player_name)
 
-        if len(game.players) >= 2:
-            game.start_game()
+        # 🚫 Prevent joining mid-round, queue for next game instead
+        if game.current_round > 0:
+            if game_id not in waiting_players:
+                waiting_players[game_id] = []  # ✅ Create queue for new players
+
+            waiting_players[game_id].append(player_name)  # ✅ Add player to queue
+            emit('join_error', {"message": "Game in progress! You'll be added to the next round."}, room=request.sid)
+            return
+
+        # ✅ If preflop, add player immediately
+        game.add_player(player_name)
+        player = game.get_player(player_name)
+
+        if player and not player.hand:
+            player.hand = game.deck.deal(2)  # 🎴 Ensure they get cards
 
         emit('game_state', game.get_state(), broadcast=True)
-
-        player = game.get_player(player_name)
-        if player and not player.hand:
-            player.hand = game.deck.deal(2)
-
-        print(f"🎴 Sending hand to {player.name}: {player.hand}")
         emit('player_hand', {"hand": player.hand}, room=request.sid)
+        print(f"🃏 {player.name} joined preflop and received: {player.hand}")
+
+
+
 
 
 @socketio.on('player_action')
@@ -83,14 +96,25 @@ def handle_action(data):
 
 @socketio.on('start_new_game')
 def start_new_game():
-    global games
-    game_id = max(games.keys(), key=lambda x: int(x.split("-")[-1]))  # Keep latest game
-    game = games[game_id]  # 🔥 Keep existing game instead of overwriting
+    global games, waiting_players
 
-    game.start_game()  # 🔄 Reset the game state while keeping players
+    game_id = max(games.keys(), key=lambda x: int(x.split("-")[-1]))  # Keep latest game
+    game = games[game_id]
+
+    game.start_game()  # 🔄 Reset the game state
+
+    # ✅ Add waiting players from queue
+    if game_id in waiting_players:
+        for player_name in waiting_players[game_id]:
+            game.add_player(player_name)
+            print(f"✅ Queued player {player_name} added to new game.")
+
+        waiting_players[game_id] = []  # Clear queue after players are added
 
     socketio.emit("game_state", game.get_state())  # Broadcast fresh game state
-    print("♻️ New round started with existing players!")
+    print("♻️ New round started with queued + existing players!")
+
+
 
 
 

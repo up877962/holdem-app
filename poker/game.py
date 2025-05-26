@@ -16,6 +16,7 @@ class PokerGame:
     def add_player(self, name):
         if len(self.players) < 6:
             self.players.append(Player(name))
+            print(f"✅ Player added: {name}. Current players: {[p.name for p in self.players]}")
 
     def get_player(self, name):
         for player in self.players:
@@ -27,11 +28,14 @@ class PokerGame:
         return self.players[self.current_turn_index] if self.players else None
 
     def next_turn(self):
-        """Moves turn forward to the next active player."""
         active_players = [p for p in self.players if p.status != "folded"]
-        if active_players:
-            self.current_turn_index = (self.current_turn_index + 1) % len(active_players)
-            print(f"👤 It's now {self.get_current_player().name}'s turn!")
+        if not active_players:
+            return  # 🚫 Prevent errors if everyone folds
+
+        # ✅ Fix issue: Ensure current_turn_index wraps correctly
+        self.current_turn_index = (self.current_turn_index + 1) % len(active_players)
+        print(
+            f"👤 Next Turn: {self.get_current_player().name} | Players in rotation: {[p.name for p in active_players]}")
 
     def start_game(self):
         """Start a new game, ensuring players persist while resetting their hands."""

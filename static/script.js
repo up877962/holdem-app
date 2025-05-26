@@ -130,3 +130,8 @@ function leaveGame() {
     document.getElementById("game-container").style.display = "none";
     document.getElementById("game-selection").style.display = "block";
 }
+
+socket.on("join_error", function(data) {
+    alert(data.message); // 🚫 Notify the player that joining mid-game isn't allowed
+});
+
