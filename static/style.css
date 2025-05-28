@@ -1,8 +1,9 @@
 /* 🎨 General Styles */
 body {
+    background: url('/static/images/background.png') no-repeat center center fixed;
+    background-size: cover; /* ✅ Ensures full-screen scaling */
     font-family: "Poppins", sans-serif;
     text-align: center;
-    background: linear-gradient(180deg, #135F3E, #0C3B25);
     color: white;
     margin: 0;
     padding: 0;
@@ -15,24 +16,12 @@ h1 {
 
 /* 🃏 Poker Table */
 #poker-table {
-    .hidden {
-    opacity: 0;
-    }
-
-
-    width: 80%;
-    height: 400px;
-    background-color: #1B4D2A;
-    border-radius: 50%;
-    border: 12px solid #8B5A2B;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    margin: auto;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.7);
+    background: none; /* ✅ Removes background */
+    border: none; /* ✅ Removes border */
+    box-shadow: none; /* ✅ Removes shadow */
 }
+
+
 
 /* 🃏 Cards */
 #community-cards, #player-hand {
