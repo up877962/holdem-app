@@ -7,6 +7,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 games = {}
 waiting_players = {}  # ✅ Track players waiting for the next game
+player_sessions = {}  # ✅ Map player names to their session IDs
 
 
 @app.route('/')
@@ -24,6 +25,8 @@ def handle_create_game():
     emit('update_games', list(games.keys()), broadcast=True)
 
 
+
+
 @socketio.on('join_game')
 def handle_join_game(data):
     game_id = data['game_id']
@@ -32,25 +35,27 @@ def handle_join_game(data):
     if game_id in games:
         game = games[game_id]
 
-        # 🚫 Prevent joining mid-round, queue for next game instead
         if game.current_round > 0:
             if game_id not in waiting_players:
-                waiting_players[game_id] = []  # ✅ Create queue for new players
-
-            waiting_players[game_id].append(player_name)  # ✅ Add player to queue
+                waiting_players[game_id] = []
+            waiting_players[game_id].append(player_name)
             emit('join_error', {"message": "Game in progress! You'll be added to the next round."}, room=request.sid)
             return
 
-        # ✅ If preflop, add player immediately
         game.add_player(player_name)
+        player_sessions[player_name] = request.sid  # ✅ Store player's session ID
         player = game.get_player(player_name)
 
+        # ✅ Ensure player gets hole cards
         if player and not player.hand:
-            player.hand = game.deck.deal(2)  # 🎴 Ensure they get cards
+            player.hand = game.deck.deal(2)  # 🎴 Give two hole cards
 
+        print(f"🃏 {player_name} joined and received: {player.hand}")
+
+        # ✅ Now emit game state and player's hand properly
         emit('game_state', game.get_state(), broadcast=True)
         emit('player_hand', {"hand": player.hand}, room=request.sid)
-        print(f"🃏 {player.name} joined preflop and received: {player.hand}")
+
 
 
 
@@ -131,6 +136,52 @@ def handle_leave(data):
             del games[game_id]
 
     socketio.emit("game_state", game.get_state())
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    player_sid = request.sid
+    disconnected_player = None
+    game_id = None
+
+    # ✅ Find the player by their session ID
+    for name, sid in player_sessions.items():
+        if sid == player_sid:
+            disconnected_player = name
+            break
+
+    if not disconnected_player:
+        print(f"❌ Unknown session disconnected: {player_sid}")
+        return
+
+    # ✅ Remove from active sessions
+    del player_sessions[disconnected_player]
+
+    # ✅ Find their game and remove them
+    for gid, game in games.items():
+        if any(p.name == disconnected_player for p in game.players):
+            game_id = gid
+            break
+
+    if game_id:
+        game = games[game_id]
+        game.players = [p for p in game.players if p.name != disconnected_player]
+        print(f"❌ {disconnected_player} disconnected and removed from {game_id}")
+
+        # ✅ If the disconnected player was up next, advance turn
+        if game.get_current_player() and game.get_current_player().name == disconnected_player:
+            game.next_turn()
+
+        # ✅ If only one player remains, declare winner
+        active_players = [p for p in game.players if p.status != "folded"]
+        if len(active_players) == 1:
+            winner = active_players[0]
+            winner.award_winnings(game.pot)
+            socketio.emit("game_result", {"winner": winner.name, "pot": game.pot})
+            del games[game_id]
+
+        socketio.emit("game_state", game.get_state(), broadcast=True)
+
+
 
 
 if __name__ == '__main__':
