@@ -53,7 +53,7 @@ def handle_join_game(data):
         print(f"🃏 {player_name} joined and received: {player.hand}")
 
         # ✅ Now emit game state and player's hand properly
-        emit('game_state', game.get_state(), broadcast=True)
+        emit('game_state', game.get_state())
         emit('player_hand', {"hand": player.hand}, room=request.sid)
 
 
@@ -103,6 +103,10 @@ def handle_action(data):
 def start_new_game():
     global games, waiting_players
 
+    if not games:  # ✅ Prevent calling max() on empty dict
+        print("❌ No active games, skipping new game start.")
+        return
+
     game_id = max(games.keys(), key=lambda x: int(x.split("-")[-1]))  # Keep latest game
     game = games[game_id]
 
@@ -114,10 +118,11 @@ def start_new_game():
             game.add_player(player_name)
             print(f"✅ Queued player {player_name} added to new game.")
 
-        waiting_players[game_id] = []  # Clear queue after players are added
+        waiting_players[game_id] = []  # ✅ Clear queue after players are added
 
-    socketio.emit("game_state", game.get_state())  # Broadcast fresh game state
+    socketio.emit("game_state", game.get_state())  # ✅ Broadcast fresh game state
     print("♻️ New round started with queued + existing players!")
+
 
 
 
@@ -132,10 +137,17 @@ def handle_leave(data):
         game = games[game_id]
         game.players = [p for p in game.players if p.name != player_name]
 
+        # ✅ If no players remain, delete the game and notify clients
         if not game.players:
             del games[game_id]
+            print(f"♻️ Game {game_id} removed since no players remain.")
+            socketio.emit("game_deleted", {"game_id": game_id})  # ✅ Notify UI to remove game
+        else:
+            socketio.emit("game_state", game.get_state())  # ✅ Only emit if game still exists
+    else:
+        print(f"⚠️ Attempted to leave non-existent game {game_id}.")
 
-    socketio.emit("game_state", game.get_state())
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -179,7 +191,7 @@ def handle_disconnect():
             socketio.emit("game_result", {"winner": winner.name, "pot": game.pot})
             del games[game_id]
 
-        socketio.emit("game_state", game.get_state(), broadcast=True)
+        socketio.emit("game_state", game.get_state())
 
 
 

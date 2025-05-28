@@ -81,6 +81,28 @@ socket.on("game_state", function(data) {
 });
 
 
+socket.on("game_deleted", function(data) {
+    if (currentGameId === data.game_id) {
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("game-selection").style.display = "block";
+        currentGameId = null;
+        alert("Game has been removed as no players remained.");
+    }
+
+    // ✅ Remove game from the list without needing a manual refresh
+    let gameListContainer = document.getElementById("game-list");
+    let gameItems = gameListContainer.getElementsByTagName("li");
+
+    for (let i = 0; i < gameItems.length; i++) {
+        if (gameItems[i].innerText.includes(data.game_id)) {
+            gameListContainer.removeChild(gameItems[i]);
+            break;
+        }
+    }
+});
+
+
+
 // 🏆 Winner Announcement & Auto-Restart Game
 socket.on("game_result", function(data) {
     socket.emit("start_new_game");

@@ -47,9 +47,9 @@ class PokerGame:
             f"👤 Next Turn: {self.get_current_player().name} | Players in rotation: {[p.name for p in active_players]}")
 
     def start_game(self):
-        """Start a new game, ensuring players persist while resetting their hands."""
-        if not self.players:
-            print("❌ Error: No players found! Can't start a new game without them.")
+        """Start a new game, ensuring minimum player count."""
+        if len(self.players) < 2:  # ✅ Prevent starting with one player
+            print("❌ Not enough players to start the game!")
             return
 
         self.deck = Deck()  # ✅ Reset the deck to shuffle new cards
@@ -59,11 +59,11 @@ class PokerGame:
         self.current_turn_index = 0
 
         for player in self.players:
-            player.reset_for_new_game()  # ✅ Reset player status, bets, and hand
-            player.hand = self.deck.deal(2)  # ✅ Ensure each player gets new hole cards
+            player.reset_for_new_game()
+            player.hand = self.deck.deal(2)  # 🎴 Ensure each player gets new hole cards
             print(f"🃏 {player.name} received: {player.hand}")
 
-        print("♻️ New round started! Players have been retained and received new hands.")
+        print("♻️ New round started with at least two players!")
 
     def process_action(self, name, action, amount=0):
         """Ensure actions follow turn order correctly."""

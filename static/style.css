@@ -1,9 +1,9 @@
 /* 🎨 General Styles */
 body {
-    background: url('/static/images/background.png') no-repeat center center fixed;
-    background-size: cover; /* ✅ Ensures full-screen scaling */
     font-family: "Poppins", sans-serif;
     text-align: center;
+    background: url('/static/images/background.png') no-repeat center center fixed;
+    background-size: cover;
     color: white;
     margin: 0;
     padding: 0;
@@ -14,16 +14,26 @@ h1 {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* 🃏 Poker Table */
-#poker-table {
-    background: none; /* ✅ Removes background */
-    border: none; /* ✅ Removes border */
-    box-shadow: none; /* ✅ Removes shadow */
+/* 🔄 Game Layout */
+#game-container {
+    display: grid;
+    grid-template-areas:
+        "players players"
+        "table cards"
+        "actions actions";
+    gap: 20px;
+    max-width: 90%;
+    margin: auto;
 }
 
+/* 🃏 Poker Table (Now Invisible) */
+#poker-table {
+    background: none;
+    border: none;
+    box-shadow: none;
+}
 
-
-/* 🃏 Cards */
+/* 🃏 Community Cards & Player Hand */
 #community-cards, #player-hand {
     display: flex;
     justify-content: center;
@@ -35,66 +45,65 @@ h1 {
 }
 
 .card {
-    width: 100px; /* Slightly wider cards */
-    height: 150px; /* Taller cards for better fit */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 80px;
+    height: 120px;
+    border-radius: 10px;
     background: white;
     color: black;
-    font-size: 16px; /* Smaller font to prevent overflow */
+    font-size: 16px;
     font-weight: bold;
     text-align: center;
     border: 3px solid black;
-    border-radius: 12px;
-    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.6);
-    padding: 5px; /* Adds space inside the card */
-    box-sizing: border-box; /* Ensures padding doesn't expand the size */
-    word-wrap: break-word; /* Allows wrapping to prevent long words from overflowing */
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+    padding: 5px;
+    box-sizing: border-box;
+    transition: transform 0.2s ease-in-out;
 }
 
-
 .card:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
 /* 🎭 Players */
 #players-container {
+    grid-area: players;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 20px;
+    gap: 10px;
     margin-top: 20px;
 }
 
 .player-info {
-    background: #222;
-    padding: 10px;
-    border-radius: 8px;
-    width: 160px;
+    background: rgba(34, 34, 34, 0.8);
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 140px;
     text-align: center;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    font-size: 14px;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* 🔘 Action Buttons */
 #actions {
+    grid-area: actions;
+    text-align: center;
     margin-top: 20px;
 }
 
 #actions button {
-    background: #FFD700;
-    color: black;
-    font-size: 16px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 18px;
     font-weight: bold;
-    padding: 10px;
-    border-radius: 6px;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: none;
     cursor: pointer;
-    transition: 0.3s;
+    transition: 0.2s ease-in-out;
 }
 
 #actions button:hover {
-    background: #FFA500;
+    background: linear-gradient(45deg, #FFA500, #FF8C00);
     transform: scale(1.1);
 }
 
@@ -124,4 +133,16 @@ h1 {
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
     opacity: 0;
     transition: opacity 1s ease-in-out;
+}
+
+/* 🚀 Smooth Game Updates */
+.game-update {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.game-update.show {
+    opacity: 1;
+    transform: translateY(0);
 }
