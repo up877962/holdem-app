@@ -28,12 +28,21 @@ class PokerGame:
         return self.players[self.current_turn_index] if self.players else None
 
     def next_turn(self):
+        """Advances the turn order, skipping folded players."""
         active_players = [p for p in self.players if p.status != "folded"]
-        if not active_players:
-            return  # 🚫 Prevent errors if everyone folds
 
-        # ✅ Fix issue: Ensure current_turn_index wraps correctly
-        self.current_turn_index = (self.current_turn_index + 1) % len(active_players)
+        if not active_players:
+            print("🚫 No active players left—game should end!")
+            return  # Prevent errors if everyone folds
+
+        while True:
+            # ✅ Ensure turn index wraps correctly
+            self.current_turn_index = (self.current_turn_index + 1) % len(self.players)
+
+            # ✅ Skip folded players automatically
+            if self.players[self.current_turn_index].status != "folded":
+                break
+
         print(
             f"👤 Next Turn: {self.get_current_player().name} | Players in rotation: {[p.name for p in active_players]}")
 
@@ -43,18 +52,18 @@ class PokerGame:
             print("❌ Error: No players found! Can't start a new game without them.")
             return
 
-        self.deck = Deck()
+        self.deck = Deck()  # ✅ Reset the deck to shuffle new cards
         self.community_cards = []
         self.pot = 0
         self.current_round = 0
         self.current_turn_index = 0
 
         for player in self.players:
-            player.reset_for_new_game()
-            player.hand = self.deck.deal(2)
+            player.reset_for_new_game()  # ✅ Reset player status, bets, and hand
+            player.hand = self.deck.deal(2)  # ✅ Ensure each player gets new hole cards
             print(f"🃏 {player.name} received: {player.hand}")
 
-        print("♻️ New round started! Players have been retained.")
+        print("♻️ New round started! Players have been retained and received new hands.")
 
     def process_action(self, name, action, amount=0):
         """Ensure actions follow turn order correctly."""
