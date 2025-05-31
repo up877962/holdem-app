@@ -78,8 +78,15 @@ socket.on("game_state", function(data) {
         playerDiv.innerHTML = `<strong>${player.name}</strong> - 🪙 Chips: ${player.chips} - ${player.status}`;
         playersContainer.appendChild(playerDiv);
     });
-});
 
+    // 🏆 Winner Modal Logic
+    if (data.winner) {
+        const modal = document.getElementById("winner-modal");
+        const message = document.getElementById("winner-message");
+        message.innerHTML = `🏆 <b>${data.winner}</b> wins the pot of <b>${data.pot}</b> chips!`;
+        modal.style.display = "flex";
+    }
+});
 
 socket.on("game_deleted", function(data) {
     if (currentGameId === data.game_id) {
@@ -100,8 +107,6 @@ socket.on("game_deleted", function(data) {
         }
     }
 });
-
-
 
 // 🏆 Winner Announcement & Auto-Restart Game
 socket.on("game_result", function(data) {
@@ -157,3 +162,18 @@ socket.on("join_error", function(data) {
     alert(data.message); // 🚫 Notify the player that joining mid-game isn't allowed
 });
 
+// Winner Modal Close Logic
+window.onload = function() {
+    const modal = document.getElementById("winner-modal");
+    const closeBtn = document.getElementById("close-winner-modal");
+    if (closeBtn) {
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        };
+    }
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    };
+};

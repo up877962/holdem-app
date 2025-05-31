@@ -28,23 +28,19 @@ class PokerGame:
         return self.players[self.current_turn_index] if self.players else None
 
     def next_turn(self):
-        """Advances the turn order, skipping folded players."""
+        """Advances the turn order, skipping folded, all-in, or broke players."""
         active_players = [p for p in self.players if p.status != "folded"]
 
         if not active_players:
             print("🚫 No active players left—game should end!")
             return  # Prevent errors if everyone folds
 
-        while True:
-            # ✅ Ensure turn index wraps correctly
+        for _ in range(len(self.players)):
             self.current_turn_index = (self.current_turn_index + 1) % len(self.players)
-
-            # ✅ Skip folded players automatically
-            if self.players[self.current_turn_index].status != "folded":
-                break
-
-        print(
-            f"👤 Next Turn: {self.get_current_player().name} | Players in rotation: {[p.name for p in active_players]}")
+            next_player = self.players[self.current_turn_index]
+            if next_player.status not in ("folded", "all-in") and next_player.chips > 0:
+                return
+        print("⚠️ No eligible players left to act.")
 
     def start_game(self):
         """Start a new game, ensuring minimum player count."""
@@ -66,11 +62,14 @@ class PokerGame:
         print("♻️ New round started with at least two players!")
 
     def process_action(self, name, action, amount=0):
-        """Ensure actions follow turn order correctly."""
         current_player = self.get_current_player()
-
         if not current_player or name != current_player.name:
             print(f"❌ Not {name}'s turn! It's {current_player.name}'s turn.")
+            return
+
+        if current_player.chips == 0 or current_player.status == "all-in":
+            print(f"⛔ {name} cannot act (all-in or broke). Skipping.")
+            self.next_turn()
             return
 
         print(f"🃏 Processing {name}'s action: {action}")
@@ -80,38 +79,62 @@ class PokerGame:
         if action == "fold":
             current_player.fold()
         elif action == "raise":
-            bet_amount = current_player.bet(amount)
+            bet_amount = current_player.bet(min(amount, current_player.chips))
             self.pot += bet_amount
         elif action == "call":
-            call_amount = highest_bet - current_player.bet_amount
+            call_amount = min(highest_bet - current_player.bet_amount, current_player.chips)
             if call_amount > 0:
                 bet_amount = current_player.bet(call_amount)
                 self.pot += bet_amount
+            # Mark as acted even if call_amount is 0 (checking)
+        else:
+            print(f"❌ Invalid action: {action}")
+            return
 
         current_player.has_acted = True
 
         active_players = [p for p in self.players if p.status != "folded"]
-        all_in_or_folded = all(p.status in ("all-in", "folded") for p in active_players)
+        all_in_or_folded_or_broke = all(p.status in ("all-in", "folded") or p.chips == 0 for p in active_players)
+        highest_bet = max((p.bet_amount for p in active_players), default=0)
 
         if len(active_players) == 1:
             winner = active_players[0]
-            winner.award_winnings(self.pot)  # ✅ Correctly award pot to winner
+            winner.award_winnings(self.pot)
             winner_data = {"winner": winner.name, "pot": self.pot}
             print(f"🎉 Winner announced due to fold: {winner_data}")
+            self.start_game()  # Automatically start a new game
             return winner_data
 
-        if all_in_or_folded:
-            print("🏁 All players are all-in or folded. Proceeding to showdown!")
-            return {"winner": self.determine_winner(), "pot": self.pot}
+        if all_in_or_folded_or_broke:
+            print("🏁 All players are all-in, folded, or broke. Dealing out the board and proceeding to showdown!")
+            while self.current_round < len(self.rounds) - 2:
+                self.next_round()
+            winner_name = self.determine_winner()
+            result = {"winner": winner_name, "pot": self.pot}
+            self.start_game()
+            return result
 
+        # Only advance round if all active players have acted and matched the highest bet
         if all(p.has_acted for p in active_players) and all(p.bet_amount == highest_bet for p in active_players):
+            # If any player is all-in and no one can raise, go straight to showdown
+            if any(p.status == "all-in" for p in active_players):
+                print("🏁 All-in situation: dealing out the board and proceeding to showdown!")
+                while self.current_round < len(self.rounds) - 2:
+                    self.next_round()
+                winner_name = self.determine_winner()
+                result = {"winner": winner_name, "pot": self.pot}
+                self.start_game()
+                return result
             print("🔄 All players have acted, advancing round!")
+            for p in self.players:
+                p.has_acted = False  # Reset for next round
             self.next_round()
+            return
 
         self.next_turn()
 
     def next_round(self):
-        """Advance the game to the next round, ensuring correct indexing."""
+        """Advance the game to the next round, ensuring correct indexing and turn order."""
         if self.current_round + 1 >= len(self.rounds):
             print("🏆 Game has reached showdown!")
             self.current_round = len(self.rounds) - 1
@@ -126,6 +149,15 @@ class PokerGame:
         elif self.rounds[self.current_round] in ["turn", "river"]:
             self.community_cards.append(self.deck.deal(1)[0])
             print(f"🃏 {self.rounds[self.current_round]} card added: {self.community_cards[-1]}")
+
+        # Reset has_acted for all players
+        for p in self.players:
+            p.has_acted = False
+        # Set turn to the next eligible player
+        for idx, p in enumerate(self.players):
+            if p.status not in ("folded", "all-in") and p.chips > 0:
+                self.current_turn_index = idx
+                break
 
     def determine_winner(self):
         """Evaluate the best poker hand and declare a winner."""
