@@ -80,25 +80,29 @@ class PokerGame:
         if action == "fold":
             current_player.fold()
         elif action == "raise":
-            current_player.bet(amount)
-            self.pot += amount
+            bet_amount = current_player.bet(amount)
+            self.pot += bet_amount
         elif action == "call":
             call_amount = highest_bet - current_player.bet_amount
             if call_amount > 0:
-                current_player.bet(call_amount)
-                self.pot += call_amount
+                bet_amount = current_player.bet(call_amount)
+                self.pot += bet_amount
 
         current_player.has_acted = True
 
         active_players = [p for p in self.players if p.status != "folded"]
+        all_in_or_folded = all(p.status in ("all-in", "folded") for p in active_players)
 
         if len(active_players) == 1:
             winner = active_players[0]
             winner.award_winnings(self.pot)  # ✅ Correctly award pot to winner
             winner_data = {"winner": winner.name, "pot": self.pot}
             print(f"🎉 Winner announced due to fold: {winner_data}")
-
             return winner_data
+
+        if all_in_or_folded:
+            print("🏁 All players are all-in or folded. Proceeding to showdown!")
+            return {"winner": self.determine_winner(), "pot": self.pot}
 
         if all(p.has_acted for p in active_players) and all(p.bet_amount == highest_bet for p in active_players):
             print("🔄 All players have acted, advancing round!")

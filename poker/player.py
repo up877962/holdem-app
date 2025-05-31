@@ -20,14 +20,21 @@ class Player:
         self.has_acted = True
 
     def bet(self, amount):
-        """Places a bet, preventing bets larger than available chips."""
-        if amount > self.chips:
-            print(f"❌ {self.name} can't bet {amount}, insufficient chips!")
-            return 0  # Prevent betting more than available chips
-        self.chips -= amount
-        self.bet_amount += amount  # Track total bet for matching calls
-        self.has_acted = True
-        return amount
+        """Places a bet, going all-in if amount exceeds available chips."""
+        if amount >= self.chips:
+            # All-in
+            actual_bet = self.chips
+            self.bet_amount += actual_bet
+            self.chips = 0
+            self.status = "all-in"
+            self.has_acted = True
+            print(f"⚡ {self.name} goes all-in with {actual_bet} chips!")
+            return actual_bet
+        else:
+            self.chips -= amount
+            self.bet_amount += amount  # Track total bet for matching calls
+            self.has_acted = True
+            return amount
 
     def award_winnings(self, amount):
         """Credit winnings to the player's balance, handling split pots."""
