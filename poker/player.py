@@ -39,6 +39,7 @@ class Player:
     def award_winnings(self, amount):
         """Credit winnings to the player's balance, handling split pots."""
         self.chips += amount
+        self.bet_amount = 0  # Reset bet amount after winnings are awarded
         print(f"💰 {self.name} received {amount} chips! New balance: {self.chips}")
 
     def __repr__(self):
