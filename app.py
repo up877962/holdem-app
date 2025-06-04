@@ -70,7 +70,7 @@ def handle_action(data):
         game = games[game_id]
         print("✅ Game found, processing action...")
 
-        result = game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
+        game.process_action(data['name'], data.get('action', ""), data.get('amount', 0))
 
         active_players = [p for p in game.players if p.status != "folded"]
 
@@ -91,13 +91,6 @@ def handle_action(data):
 
             socketio.emit("start_new_game")  # ✅ Restart game after showdown
             return  # ✅ Prevent further action processing
-
-        # 🏆 **Check for all-in or special win result**
-        if result and isinstance(result, dict) and "winner" in result:
-            socketio.emit("game_result", result)
-            print(f"🎉 Winner announced (all-in/special): {result}")
-            socketio.emit("start_new_game")
-            return
 
         # 🔄 **Ensure UI refreshes properly during normal play**
         socketio.emit("game_state", game.get_state())
@@ -205,3 +198,5 @@ def handle_disconnect():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
+
+

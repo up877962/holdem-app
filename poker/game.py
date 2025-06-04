@@ -12,6 +12,13 @@ class PokerGame:
         self.rounds = ["preflop", "flop", "turn", "river", "showdown"]
         self.current_round = 0
         self.current_turn_index = 0  # 🔥 Track turn order
+        # Blinds and dealer
+        self.dealer_index = 0
+        self.small_blind_amount = 10
+        self.big_blind_amount = 20
+        self.small_blind_index = 0
+        self.big_blind_index = 0
+        self.minimum_bet = self.big_blind_amount
 
     def add_player(self, name):
         if len(self.players) < 6:
@@ -43,8 +50,8 @@ class PokerGame:
         print("⚠️ No eligible players left to act.")
 
     def start_game(self):
-        """Start a new game, ensuring minimum player count."""
-        if len(self.players) < 2:  # ✅ Prevent starting with one player
+        """Start a new game, ensuring minimum player count and assign blinds."""
+        if len(self.players) < 2:
             print("❌ Not enough players to start the game!")
             return
 
@@ -52,12 +59,27 @@ class PokerGame:
         self.community_cards = []
         self.pot = 0
         self.current_round = 0
-        self.current_turn_index = 0
+        # Rotate dealer
+        self.dealer_index = (self.dealer_index + 1) % len(self.players)
+        self.small_blind_index = (self.dealer_index + 1) % len(self.players)
+        self.big_blind_index = (self.dealer_index + 2) % len(self.players)
+        self.current_turn_index = (self.dealer_index + 3) % len(self.players) if len(self.players) > 2 else self.big_blind_index
+        self.minimum_bet = self.big_blind_amount
 
-        for player in self.players:
+        for i, player in enumerate(self.players):
             player.reset_for_new_game()
             player.hand = self.deck.deal(2)  # 🎴 Ensure each player gets new hole cards
             print(f"🃏 {player.name} received: {player.hand}")
+
+        # Post blinds
+        sb_player = self.players[self.small_blind_index]
+        bb_player = self.players[self.big_blind_index]
+        sb_bet = sb_player.bet(self.small_blind_amount)
+        bb_bet = bb_player.bet(self.big_blind_amount)
+        self.pot += sb_bet + bb_bet
+        print(f"💰 {sb_player.name} posts small blind ({sb_bet}), {bb_player.name} posts big blind ({bb_bet})")
+        sb_player.has_acted = True
+        bb_player.has_acted = True
 
         print("♻️ New round started with at least two players!")
 
@@ -196,6 +218,11 @@ class PokerGame:
             "community_cards": [{"rank": c["rank"], "suit": c["suit"]} for c in self.community_cards] if self.community_cards else [],
             "current_round": self.rounds[self.current_round],
             "current_player": self.get_current_player().name if self.get_current_player() else None,
-            "highest_bet": highest_bet
+            "highest_bet": highest_bet,
+            "dealer_index": self.dealer_index,
+            "small_blind_index": self.small_blind_index,
+            "big_blind_index": self.big_blind_index,
+            "small_blind_amount": self.small_blind_amount,
+            "big_blind_amount": self.big_blind_amount,
+            "minimum_bet": self.minimum_bet,
         }
-

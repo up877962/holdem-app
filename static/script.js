@@ -79,6 +79,22 @@ socket.on("game_state", function(data) {
         playersContainer.appendChild(playerDiv);
     });
 
+    // 🃏 Show dealer and blinds info
+    let dealerInfo = document.getElementById("dealer-info");
+    if (!dealerInfo) {
+        dealerInfo = document.createElement("div");
+        dealerInfo.id = "dealer-info";
+        document.getElementById("game-container").insertBefore(dealerInfo, document.getElementById("poker-table"));
+    }
+    let dealerName = data.players?.[data.dealer_index]?.name || "?";
+    let sbName = data.players?.[data.small_blind_index]?.name || "?";
+    let bbName = data.players?.[data.big_blind_index]?.name || "?";
+    dealerInfo.innerHTML = `
+        <h3>Dealer: <span class="dealer">${dealerName}</span> |
+        Small Blind: <span class="small-blind">${sbName} (${data.small_blind_amount})</span> |
+        Big Blind: <span class="big-blind">${bbName} (${data.big_blind_amount})</span></h3>
+    `;
+
     // 🏆 Winner Modal Logic
     if (data.winner) {
         const modal = document.getElementById("winner-modal");
@@ -177,4 +193,3 @@ window.onload = function() {
         }
     };
 };
-
