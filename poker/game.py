@@ -198,3 +198,4 @@ class PokerGame:
             "current_player": self.get_current_player().name if self.get_current_player() else None,
             "highest_bet": highest_bet
         }
+
