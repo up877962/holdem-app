@@ -32,7 +32,9 @@ class PokerGame:
         return None
 
     def get_current_player(self):
-        return self.players[self.current_turn_index] if self.players else None
+        if not self.players or not (0 <= self.current_turn_index < len(self.players)):
+            return None
+        return self.players[self.current_turn_index]
 
     def next_turn(self):
         """Advances the turn order, skipping folded, all-in, or broke players."""
@@ -51,6 +53,8 @@ class PokerGame:
 
     def start_game(self):
         """Start a new game, ensuring minimum player count and assign blinds."""
+        # Exclude players with 0 chips
+        self.players = [p for p in self.players if p.chips > 0]
         if len(self.players) < 2:
             print("❌ Not enough players to start the game!")
             return
@@ -86,7 +90,8 @@ class PokerGame:
     def process_action(self, name, action, amount=0):
         current_player = self.get_current_player()
         if not current_player or name != current_player.name:
-            print(f"❌ Not {name}'s turn! It's {current_player.name}'s turn.")
+            actual_turn = current_player.name if current_player else "(no player)"
+            print(f"❌ Not {name}'s turn! It's {actual_turn}'s turn.")
             return
 
         if current_player.chips == 0 or current_player.status == "all-in":
@@ -182,22 +187,59 @@ class PokerGame:
                 break
 
     def determine_winner(self):
-        """Evaluate the best poker hand and declare a winner."""
-        best_hand = None
-        winner = None
+        """Evaluate the best poker hand and declare a winner, handling side pots."""
+        # Gather all-in and active players
+        eligible_players = [p for p in self.players if p.status != "folded"]
+        if not eligible_players:
+            return None
 
-        for player in self.players:
-            if player.status != "folded":
+        # Build a list of (player, bet_amount) for side pot calculation
+        contributions = [(p, p.bet_amount) for p in self.players]
+        pots = []
+        while True:
+            # Find the smallest non-zero contribution
+            nonzero = [amt for _, amt in contributions if amt > 0]
+            if not nonzero:
+                break
+            min_bet = min(nonzero)
+            # Players who contributed to this pot
+            pot_players = [p for p, amt in contributions if amt > 0]
+            pot_amount = min_bet * len(pot_players)
+            pots.append((pot_players, pot_amount))
+            # Subtract min_bet from each contributing player's amount
+            contributions = [
+                (p, amt - min_bet if amt > 0 else 0)
+                for p, amt in contributions
+            ]
+
+        winners = []
+        for pot_players, pot_amount in pots:
+            # Among pot_players, find the best hand
+            best_hand = None
+            best_players = []
+            for player in pot_players:
                 hand_strength = evaluate_hand(player.hand + self.community_cards)
-                if not best_hand or hand_strength > best_hand:
+                if best_hand is None or hand_strength > best_hand:
                     best_hand = hand_strength
-                    winner = player
-
-        if winner:
-            print(f"🏆 Winner determined: {winner.name} - Adding {self.pot} to their chips!")
-            winner.award_winnings(self.pot)
-
-        return winner.name if winner else None
+                    best_players = [player]
+                elif hand_strength == best_hand:
+                    best_players.append(player)
+            # Split pot among best_players
+            share = pot_amount // len(best_players)
+            for winner in best_players:
+                winner.award_winnings(share)
+            winners.append((best_players, share))
+            # If there's a remainder, give it to the first winner
+            remainder = pot_amount % len(best_players)
+            if remainder:
+                best_players[0].award_winnings(remainder)
+        # For display, return the main pot winner(s)
+        main_pot_winners = winners[0][0] if winners else []
+        if main_pot_winners:
+            names = ', '.join([p.name for p in main_pot_winners])
+            print(f"🏆 Winner(s): {names}")
+            return names
+        return None
 
     def get_state(self):
         highest_bet = max((p.bet_amount for p in self.players if p.status != "folded"), default=0)
