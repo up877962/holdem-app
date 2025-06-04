@@ -19,6 +19,7 @@ class PokerGame:
         self.small_blind_index = 0
         self.big_blind_index = 0
         self.minimum_bet = self.big_blind_amount
+        self.waiting_for_players = False  # Flag to indicate waiting state
 
     def add_player(self, name):
         if len(self.players) < 6:
@@ -56,8 +57,11 @@ class PokerGame:
         # Exclude players with 0 chips
         self.players = [p for p in self.players if p.chips > 0]
         if len(self.players) < 2:
-            print("❌ Not enough players to start the game!")
+            print("❌ Not enough players to start the game! Waiting for more players.")
+            # Optionally, set a waiting flag or notify frontend here
+            self.waiting_for_players = True
             return
+        self.waiting_for_players = False
 
         self.deck = Deck()  # ✅ Reset the deck to shuffle new cards
         self.community_cards = []
@@ -187,26 +191,45 @@ class PokerGame:
                 break
 
     def determine_winner(self):
-        """Evaluate the best poker hand and declare a winner, handling side pots."""
-        # Gather all-in and active players
+        """Evaluate the best poker hand and declare a winner, handling side pots only if needed."""
         eligible_players = [p for p in self.players if p.status != "folded"]
         if not eligible_players:
             return None
 
-        # Build a list of (player, bet_amount) for side pot calculation
+        # Check if all eligible players have the same bet amount (no side pot needed)
+        bet_amounts = set(p.bet_amount for p in eligible_players)
+        if len(bet_amounts) == 1:
+            # Normal case: award the whole pot to the best hand
+            best_hand = None
+            best_players = []
+            for player in eligible_players:
+                hand_strength = evaluate_hand(player.hand + self.community_cards)
+                if best_hand is None or hand_strength > best_hand:
+                    best_hand = hand_strength
+                    best_players = [player]
+                elif hand_strength == best_hand:
+                    best_players.append(player)
+            share = self.pot // len(best_players)
+            for winner in best_players:
+                winner.award_winnings(share)
+            remainder = self.pot % len(best_players)
+            if remainder:
+                best_players[0].award_winnings(remainder)
+            names = ', '.join([p.name for p in best_players])
+            print(f"🏆 Winner(s): {names}")
+            return names
+
+        # Otherwise, use side pot logic
         contributions = [(p, p.bet_amount) for p in self.players]
         pots = []
         while True:
-            # Find the smallest non-zero contribution
             nonzero = [amt for _, amt in contributions if amt > 0]
             if not nonzero:
                 break
             min_bet = min(nonzero)
-            # Players who contributed to this pot
             pot_players = [p for p, amt in contributions if amt > 0]
             pot_amount = min_bet * len(pot_players)
             pots.append((pot_players, pot_amount))
-            # Subtract min_bet from each contributing player's amount
             contributions = [
                 (p, amt - min_bet if amt > 0 else 0)
                 for p, amt in contributions
@@ -214,7 +237,6 @@ class PokerGame:
 
         winners = []
         for pot_players, pot_amount in pots:
-            # Among pot_players, find the best hand
             best_hand = None
             best_players = []
             for player in pot_players:
@@ -224,16 +246,13 @@ class PokerGame:
                     best_players = [player]
                 elif hand_strength == best_hand:
                     best_players.append(player)
-            # Split pot among best_players
             share = pot_amount // len(best_players)
             for winner in best_players:
                 winner.award_winnings(share)
             winners.append((best_players, share))
-            # If there's a remainder, give it to the first winner
             remainder = pot_amount % len(best_players)
             if remainder:
                 best_players[0].award_winnings(remainder)
-        # For display, return the main pot winner(s)
         main_pot_winners = winners[0][0] if winners else []
         if main_pot_winners:
             names = ', '.join([p.name for p in main_pot_winners])
